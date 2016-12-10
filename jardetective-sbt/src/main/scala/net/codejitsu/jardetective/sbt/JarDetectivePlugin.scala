@@ -4,7 +4,8 @@ import sbt._
 import Keys._
 
 object JarDetectivePlugin extends AutoPlugin {
-  final case class Dependency(organization: String, name: String, revision: String)
+  final case class Module(organization: String, name: String, revision: String)
+  final case class Dependency(organization: String, name: String, revision: String, scope: String)
 
   object autoImport {
     /**
@@ -21,15 +22,26 @@ object JarDetectivePlugin extends AutoPlugin {
 
   override def projectSettings = Seq(
     snapshot in JarDetective := {
+      val currentModuleName = moduleName.value
+      val currentModuleOrganization = organization.value
+      val currentModuleVersion = version.value
+
+      val module = Module(currentModuleOrganization, currentModuleName, currentModuleVersion)
+
       val dependencies = (allDependencies in Compile).value map { dep =>
-        Dependency(dep.organization, dep.name, dep.revision)
+        Dependency(dep.organization, dep.name, dep.revision, dep.configurations.getOrElse("compile"))
       }
 
-      processDependencies(dependencies.distinct.sortBy(d => s"${d.organization}:${d.name}:${d.revision}"))
+      processDependencies(module, dependencies.distinct.sortBy(d => s"${d.organization}:${d.name}:${d.revision}"))
     }
   )
 
-  def processDependencies(deps: Seq[Dependency]): Unit = {
+  def processDependencies(module: Module, deps: Seq[Dependency]): Unit = {
+    //println(s"Current module: ${currentModule.organization}:${currentModule.name}:${currentModule.revision}")
+    println()
+    println(module)
+    println("=============================================")
+
     deps.foreach(println)
   }
 }
