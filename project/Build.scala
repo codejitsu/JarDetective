@@ -19,6 +19,7 @@ object JarDetectiveBuild extends Build {
     .settings(jarDetectiveSbtSettings: _*)
     .settings(sbtPlugin := true)
     .settings(scalaVersion := "2.10.4")
+    .settings(libraryDependencies ++= jarDetectiveSbtDependencies)
 
   lazy val jarDetectiveService = Project(id = "jardetective-service", base = file("jardetective-service"))
     .settings(jarDetectiveServiceSettings: _*)

@@ -2,6 +2,8 @@ import sbt._
 
 object Dependencies {
 
+  import Versions._
+
   val resolutionRepos = Seq(
     "Twitter Maven Repo" at "http://maven.twttr.com/",
     "Sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/"
@@ -13,6 +15,9 @@ object Dependencies {
   def runtime   (deps: ModuleID*): Seq[ModuleID] = deps map (_ % "runtime")
   def container (deps: ModuleID*): Seq[ModuleID] = deps map (_ % "container")
 
-//  val scalaTest =  "org.scalatest" %% "scalatest" % "1.9.2"
-//  val twitterUtil = "com.twitter" %% "util-eval" % "6.3.6" withSources() withJavadoc()
+  val playJson = "com.typesafe.play" %% "play-json" % playJsonVersion
+
+  // ====================
+
+  val jarDetectiveSbtDependencies = compile(playJson)
 }

@@ -2,10 +2,16 @@ package net.codejitsu.jardetective.sbt
 
 import sbt._
 import Keys._
+import play.api.libs.json.Json
 
 object JarDetectivePlugin extends AutoPlugin {
+  implicit val moduleFormat = Json.format[Module]
+  implicit val dependencyFormat = Json.format[Dependency]
+  implicit val snapshotFormat = Json.format[DependencySnapshot]
+
   final case class Module(organization: String, name: String, revision: String)
   final case class Dependency(organization: String, name: String, revision: String, scope: String)
+  final case class DependencySnapshot(module: Module, dependencies: Seq[Dependency])
 
   object autoImport {
     /**
@@ -13,6 +19,7 @@ object JarDetectivePlugin extends AutoPlugin {
       */
     lazy val JarDetective = config("jardetective") extend (Compile)
 
+    lazy val printJson = taskKey[Unit]("Prints json of all project dependencies.")
     lazy val snapshot = taskKey[Unit]("Takes snapshot of all project dependencies.")
   }
 
@@ -21,7 +28,7 @@ object JarDetectivePlugin extends AutoPlugin {
   override def trigger = allRequirements
 
   override def projectSettings = Seq(
-    snapshot in JarDetective := {
+    printJson in JarDetective := {
       val currentModuleName = moduleName.value
       val currentModuleOrganization = organization.value
       val currentModuleVersion = version.value
@@ -32,16 +39,18 @@ object JarDetectivePlugin extends AutoPlugin {
         Dependency(dep.organization, dep.name, dep.revision, dep.configurations.getOrElse("compile"))
       }
 
-      processDependencies(module, dependencies.distinct.sortBy(d => s"${d.organization}:${d.name}:${d.revision}"))
+      val snap = DependencySnapshot(module, dependencies.distinct.sortBy(d => s"${d.organization}:${d.name}:${d.revision}"))
+
+      printDependencies(snap)
     }
   )
 
-  def processDependencies(module: Module, deps: Seq[Dependency]): Unit = {
-    //println(s"Current module: ${currentModule.organization}:${currentModule.name}:${currentModule.revision}")
+  def printDependencies(snapshot: DependencySnapshot): Unit = {
     println()
-    println(module)
-    println("=============================================")
+    println(s"=> ${snapshot.module}")
 
-    deps.foreach(println)
+    val ser = Json.toJson(snapshot)
+
+    println(Json.prettyPrint(ser))
   }
 }
