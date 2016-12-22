@@ -3,15 +3,12 @@ package net.codejitsu.jardetective.sbt
 import sbt._
 import Keys._
 import play.api.libs.json.Json
+import net.codejitsu.jardetective.model.Model._
 
 object JarDetectivePlugin extends AutoPlugin {
   implicit val moduleFormat = Json.format[Module]
   implicit val dependencyFormat = Json.format[Dependency]
   implicit val snapshotFormat = Json.format[DependencySnapshot]
-
-  final case class Module(organization: String, name: String, revision: String)
-  final case class Dependency(organization: String, name: String, revision: String, scope: String)
-  final case class DependencySnapshot(module: Module, dependencies: Seq[Dependency])
 
   object autoImport {
     /**
