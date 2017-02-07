@@ -3,7 +3,7 @@ import Keys._
 
 object BuildSettings {
 
-  lazy val basicSettings = seq(
+  lazy val basicSettings = Seq(
     version               := "0.1.0-SNAPSHOT",
     organization          := "net.codejitsu",
     startYear             := Some(2016),

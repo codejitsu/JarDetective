@@ -16,8 +16,10 @@ object Dependencies {
   def container (deps: ModuleID*): Seq[ModuleID] = deps map (_ % "container")
 
   val playJson = "com.typesafe.play" %% "play-json" % playJsonVersion
+  val akkaHttp = "com.typesafe.akka" %% "akka-http" % akkaHttpVersion
 
   // ====================
 
   val jarDetectiveSbtDependencies = compile(playJson)
+  val jarDetectiveServiceDependencies = compile(akkaHttp)
 }
