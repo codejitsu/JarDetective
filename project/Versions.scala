@@ -1,7 +1,10 @@
 object Versions {
-  val scala2_10       = "2.10.4"
-  val scala2_11       = "2.11.8"
+  val scala2_10         = "2.10.4"
+  val scala2_11         = "2.11.8"
 
-  val playJsonVersion = "2.4.8"
-  val akkaHttpVersion = "10.0.3"
+  val playJsonVersion   = "2.4.8"
+  val akkaHttpVersion   = "10.0.3"
+  val akkaCirceVersion  = "1.12.0"
+
+  val circeVersion      = "0.7.0"
 }

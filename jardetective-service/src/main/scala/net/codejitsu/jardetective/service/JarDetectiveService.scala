@@ -4,12 +4,46 @@ import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.model.StatusCodes
 import akka.stream.ActorMaterializer
+import net.codejitsu.jardetective.model.Model.DependencySnapshot
 
 import scala.concurrent.Future
 
 object JarDetectiveService {
+   val route = {
+     import de.heikoseeberger.akkahttpcirce.CirceSupport._
+     import akka.http.scaladsl.server.Directives._
+     import io.circe.generic.auto._
+
+     path("snapshots") {
+
+       // PUT /snapshots
+       // {
+       //   "module": {
+       //     "name": ...
+       //   }
+       // }
+
+       // 201 - snapshot stored
+       // 400 - invalid input
+
+       put {
+         decodeRequest {
+           entity(as[DependencySnapshot]) { snapshot =>
+
+             // add snapshot to the graph
+
+             complete(
+               StatusCodes.Created,
+               s"Snapshot received for module: ${snapshot.module.organization}.${snapshot.module.name}-${snapshot.module.revision}"
+             )
+           }
+         }
+       }
+     }
+   }
+
    def main(args: Array[String]) {
      implicit val system = ActorSystem()
      implicit val materializer = ActorMaterializer()
@@ -17,14 +51,10 @@ object JarDetectiveService {
 
      val log = Logging(system, this.getClass.getName)
 
-     val handler = get {
-       complete("Hello world!")
-     }
-
      val (host, port) = ("0.0.0.0", 8080)
 
      val bindingFuture: Future[ServerBinding] =
-       Http().bindAndHandle(handler, host, port)
+       Http().bindAndHandle(route, host, port)
 
      bindingFuture.onFailure {
        case ex: Exception =>

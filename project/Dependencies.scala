@@ -17,9 +17,14 @@ object Dependencies {
 
   val playJson = "com.typesafe.play" %% "play-json" % playJsonVersion
   val akkaHttp = "com.typesafe.akka" %% "akka-http" % akkaHttpVersion
+  val akkaCirce = "de.heikoseeberger" %% "akka-http-circe" % akkaCirceVersion
+
+  val circeCore = "io.circe" %% "circe-core" % circeVersion
+  val circeGeneric = "io.circe" %% "circe-generic" % circeVersion
+  val circeParser = "io.circe" %% "circe-parser" % circeVersion
 
   // ====================
 
   val jarDetectiveSbtDependencies = compile(playJson)
-  val jarDetectiveServiceDependencies = compile(akkaHttp)
+  val jarDetectiveServiceDependencies = compile(akkaHttp, akkaCirce, circeCore, circeGeneric, circeParser)
 }

@@ -11,6 +11,8 @@ object JarDetectiveBuild extends Build {
     "Sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/"
   )
 
+  resolvers += Resolver.bintrayRepo("hseeberger", "maven")
+
   lazy val parent = Project(id = "jardetective",
     base = file("."))
     .aggregate (jarDetectiveSbt, jarDetectiveCommon, jarDetectiveService)
