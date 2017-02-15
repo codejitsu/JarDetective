@@ -23,8 +23,10 @@ object Dependencies {
   val circeGeneric = "io.circe" %% "circe-generic" % circeVersion
   val circeParser = "io.circe" %% "circe-parser" % circeVersion
 
+  val akkaTestKit = "com.typesafe.akka" %% "akka-http-testkit" % akkaTestKitVersion
+
   // ====================
 
   val jarDetectiveSbtDependencies = compile(playJson)
-  val jarDetectiveServiceDependencies = compile(akkaHttp, akkaCirce, circeCore, circeGeneric, circeParser)
+  val jarDetectiveServiceDependencies = compile(akkaHttp, akkaCirce, circeCore, circeGeneric, circeParser) ++ test(akkaTestKit)
 }
