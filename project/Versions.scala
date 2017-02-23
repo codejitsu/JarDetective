@@ -8,4 +8,6 @@ object Versions {
   val akkaTestKitVersion  = "10.0.3"
 
   val circeVersion        = "0.7.0"
+
+  val scalatestVersion    = "3.0.1"
 }

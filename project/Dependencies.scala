@@ -25,8 +25,11 @@ object Dependencies {
 
   val akkaTestKit = "com.typesafe.akka" %% "akka-http-testkit" % akkaTestKitVersion
 
+  val scalatest = "org.scalatest" %% "scalatest" % scalatestVersion
+
   // ====================
 
   val jarDetectiveSbtDependencies = compile(playJson)
-  val jarDetectiveServiceDependencies = compile(akkaHttp, akkaCirce, circeCore, circeGeneric, circeParser) ++ test(akkaTestKit)
+  val jarDetectiveServiceDependencies = compile(akkaHttp, akkaCirce, circeCore, circeGeneric, circeParser) ++
+    test(akkaTestKit, scalatest)
 }
