@@ -15,4 +15,5 @@ object BuildSettings {
   lazy val jarDetectiveSbtSettings = basicSettings
   lazy val jarDetectiveServiceSettings = basicSettings
   lazy val jarDetectiveCommonSettings = basicSettings
+  lazy val jarDetectiveGraphSettings = basicSettings
 }

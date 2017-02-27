@@ -15,18 +15,23 @@ object JarDetectiveBuild extends Build {
 
   lazy val parent = Project(id = "jardetective",
     base = file("."))
-    .aggregate (jarDetectiveSbt, jarDetectiveCommon, jarDetectiveService)
+    .aggregate (jarDetectiveSbt, jarDetectiveCommon, jarDetectiveGraph, jarDetectiveService)
     .settings(basicSettings: _*)
 
   lazy val jarDetectiveCommon = Project(id = "jardetective-common", base = file("jardetective-common"))
     .settings(scalaVersion := scala2_10)
     .settings(jarDetectiveCommonSettings: _*)
 
+  lazy val jarDetectiveGraph = Project(id = "jardetective-graph", base = file("jardetective-graph"))
+    .settings(scalaVersion := scala2_11)
+    .settings(jarDetectiveGraphSettings: _*)
+    .dependsOn(jarDetectiveCommon)
+
   lazy val jarDetectiveService = Project(id = "jardetective-service", base = file("jardetective-service"))
     .settings(jarDetectiveServiceSettings: _*)
     .settings(scalaVersion := scala2_11)
     .settings(libraryDependencies ++= jarDetectiveServiceDependencies)
-    .dependsOn(jarDetectiveCommon)
+    .dependsOn(jarDetectiveGraph)
 
   lazy val jarDetectiveSbt = Project(id = "jardetective-sbt", base = file("jardetective-sbt"))
     .settings(jarDetectiveSbtSettings: _*)
