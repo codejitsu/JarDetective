@@ -25,6 +25,7 @@ object JarDetectiveBuild extends Build {
   lazy val jarDetectiveGraph = Project(id = "jardetective-graph", base = file("jardetective-graph"))
     .settings(scalaVersion := scala2_11)
     .settings(jarDetectiveGraphSettings: _*)
+    .settings(libraryDependencies ++= jarDetectiveGraphDependencies)
     .dependsOn(jarDetectiveCommon)
 
   lazy val jarDetectiveService = Project(id = "jardetective-service", base = file("jardetective-service"))

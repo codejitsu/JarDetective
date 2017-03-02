@@ -32,4 +32,5 @@ object Dependencies {
   val jarDetectiveSbtDependencies = compile(playJson)
   val jarDetectiveServiceDependencies = compile(akkaHttp, akkaCirce, circeCore, circeGeneric, circeParser) ++
     test(akkaTestKit, scalatest)
+  val jarDetectiveGraphDependencies = test(scalatest)
 }
