@@ -6,11 +6,14 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.StatusCodes
 import akka.stream.ActorMaterializer
+import net.codejitsu.jardetective.graph.DependencyGraph
 import net.codejitsu.jardetective.model.Model.DependencySnapshot
 
 import scala.concurrent.Future
 
-object JarDetectiveService {
+class JarDetectiveService {
+  self: DependencyGraph =>
+
    val route = {
      import de.heikoseeberger.akkahttpcirce.CirceSupport._
      import akka.http.scaladsl.server.Directives._
@@ -18,7 +21,7 @@ object JarDetectiveService {
 
      path("snapshots") {
 
-       // PUT /snapshots
+       // POST /snapshots
        // {
        //   "module": {
        //     "name": ...
@@ -28,7 +31,7 @@ object JarDetectiveService {
        // 201 - snapshot stored
        // 400 - invalid input
 
-       put {
+       post {
          decodeRequest {
            entity(as[DependencySnapshot]) { snapshot =>
 

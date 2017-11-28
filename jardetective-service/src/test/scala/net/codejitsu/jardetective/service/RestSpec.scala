@@ -2,6 +2,7 @@ package net.codejitsu.jardetective.service
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import net.codejitsu.jardetective.graph.mock.MockDependencyGraph
 import net.codejitsu.jardetective.model.Model.{Dependency, DependencySnapshot, Module}
 import org.scalatest.{Matchers, WordSpec}
 
@@ -9,7 +10,6 @@ class RestSpec extends WordSpec with Matchers with ScalatestRouteTest {
   //TODO add property based tests
   //TODO add graph service injection
 
-  import JarDetectiveService.route
   import de.heikoseeberger.akkahttpcirce.CirceSupport._
   import io.circe.generic.auto._
 
@@ -30,8 +30,10 @@ class RestSpec extends WordSpec with Matchers with ScalatestRouteTest {
 
   "The Jar Detective service" should {
     "return 201 (Created) for POST requests on /snapshots endpoint" in {
-      Post("/snapshots", validSnapshot) ~> route ~> check {
-        status shouldBe equal(StatusCodes.Created)
+      val service = new JarDetectiveService with MockDependencyGraph
+
+      Post("/snapshots", validSnapshot) ~> service.route ~> check {
+        status shouldBe StatusCodes.Created
       }
     }
   }
