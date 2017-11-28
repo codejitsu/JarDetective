@@ -28,9 +28,10 @@ class RestSpec extends WordSpec with Matchers with ScalatestRouteTest {
     ))
   )
 
+  val service = new JarDetectiveService with MockDependencyGraph
+  
   "The Jar Detective service" should {
     "return 201 (Created) for POST requests on /snapshots endpoint" in {
-      val service = new JarDetectiveService with MockDependencyGraph
 
       Post("/snapshots", validSnapshot) ~> service.route ~> check {
         status shouldBe StatusCodes.Created
