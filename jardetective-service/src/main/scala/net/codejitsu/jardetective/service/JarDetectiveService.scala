@@ -6,10 +6,11 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.StatusCodes
 import akka.stream.ActorMaterializer
-import net.codejitsu.jardetective.graph.DependencyGraph
+import net.codejitsu.jardetective.graph.{DependencyGraph, GraphMutationFailure, GraphMutationSuccess}
 import net.codejitsu.jardetective.model.Model.DependencySnapshot
 
 import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 class JarDetectiveService {
   self: DependencyGraph =>
@@ -34,13 +35,21 @@ class JarDetectiveService {
        post {
          decodeRequest {
            entity(as[DependencySnapshot]) { snapshot =>
-
              // add snapshot to the graph
-
-             complete(
-               StatusCodes.Created,
-               s"Snapshot received for module: ${snapshot.module.organization}.${snapshot.module.name}-${snapshot.module.revision}"
-             )
+             onComplete(addOrUpdateSnapshot(snapshot)) {
+               case Success(result) => result match {
+                 case GraphMutationSuccess =>
+                   complete(
+                     StatusCodes.Created,
+                     s"Snapshot received for module: ${snapshot.module.organization}.${snapshot.module.name}-${snapshot.module.revision}"
+                   )
+                 case GraphMutationFailure =>
+                   complete(
+                     StatusCodes.BadRequest
+                   )
+               }
+               case Failure(ex) => complete((StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}"))
+             }
            }
          }
        }
