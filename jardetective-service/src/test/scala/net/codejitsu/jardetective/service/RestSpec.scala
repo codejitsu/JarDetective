@@ -29,13 +29,36 @@ class RestSpec extends WordSpec with Matchers with ScalatestRouteTest {
   )
 
   val service = new JarDetectiveService with MockDependencyGraph
-  
-  "The Jar Detective service" should {
-    "return 201 (Created) for POST requests on /snapshots endpoint" in {
 
-      Post("/snapshots", validSnapshot) ~> service.route ~> check {
+  "The Jar Detective service" should {
+    "return 201 (Created) for POST requests on /snapshot endpoint" in {
+      Post("/snapshot", validSnapshot) ~> service.route ~> check {
         status shouldBe StatusCodes.Created
       }
     }
+
+    "return 404 (Not Found) for GET requests on /module endpoint for an unknown artifact" in {
+      Get("/module/mymodule/myorganization/1.2-dev/") ~> service.route ~> check {
+        status shouldBe StatusCodes.NotFound
+        entityAs[String].isEmpty shouldBe true
+      }
+    }
+/*
+    "return 200 (OK) with entity for GET requests on /module endpoint for an known artifact" in {
+      Post("/snapshot", validSnapshot) ~> service.route ~> check {
+        status shouldBe StatusCodes.Created
+      }
+
+      Get("/module/mymodule/myorganization/1.2-dev/") ~> service.route ~> check {
+        status shouldBe StatusCodes.OK
+        entityAs[String].nonEmpty shouldBe true
+
+        val module = entityAs[DependencySnapshot]
+
+        module shouldBe equal(validSnapshot)
+      }
+    }
+*/
+    // /parents/com.google.guava/guava/19.0/
   }
 }

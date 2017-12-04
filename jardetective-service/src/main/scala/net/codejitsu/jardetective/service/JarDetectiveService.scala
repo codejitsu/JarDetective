@@ -6,8 +6,8 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.StatusCodes
 import akka.stream.ActorMaterializer
-import net.codejitsu.jardetective.graph.{DependencyGraph, GraphMutationFailure, GraphMutationSuccess}
-import net.codejitsu.jardetective.model.Model.DependencySnapshot
+import net.codejitsu.jardetective.graph._
+import net.codejitsu.jardetective.model.Model.{DependencySnapshot, Module}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -20,7 +20,7 @@ class JarDetectiveService {
      import akka.http.scaladsl.server.Directives._
      import io.circe.generic.auto._
 
-     path("snapshots") {
+     path("snapshot") {
 
        // POST /snapshots
        // {
@@ -51,6 +51,19 @@ class JarDetectiveService {
                case Failure(ex) => complete((StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}"))
              }
            }
+         }
+       }
+     } ~
+     pathPrefix("module" / Segment / Segment / Segment) { (organization, name, revision) =>
+       get {
+         onComplete(lookUpOutDependencies(Module(organization, name, revision))) {
+           case Success(result) => result match {
+             case GraphRetrievalSuccess => complete(StatusCodes.OK)
+
+             case GraphRetrievalFailure => complete(StatusCodes.NotFound, "")
+           }
+
+           case Failure(ex) => complete((StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}"))
          }
        }
      }
