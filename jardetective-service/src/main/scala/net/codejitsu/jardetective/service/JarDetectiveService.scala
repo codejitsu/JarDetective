@@ -20,7 +20,7 @@ class JarDetectiveService {
      import akka.http.scaladsl.server.Directives._
      import io.circe.generic.auto._
 
-     path("snapshot") {
+     path("dependencies") {
 
        // POST /snapshots
        // {
@@ -54,7 +54,7 @@ class JarDetectiveService {
          }
        }
      } ~
-     pathPrefix("module" / Segment / Segment / Segment) { (organization, name, revision) =>
+     pathPrefix("dependencies" / Segment / Segment / Segment) { (organization, name, revision) =>
        get {
          onComplete(lookUpOutDependencies(Module(organization, name, revision))) {
            case Success(result) => result match {
