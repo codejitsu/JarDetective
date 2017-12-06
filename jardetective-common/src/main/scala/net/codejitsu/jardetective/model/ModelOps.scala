@@ -7,6 +7,6 @@ import net.codejitsu.jardetective.model.Model.Module
   */
 object ModelOps {
   implicit class ModuleLike(module: Module) {
-    lazy val key: String = s"${module.name}:${module.organization}:${module.revision}"
+    lazy val key: String = s"${module.organization}:${module.name}:${module.revision}"
   }
 }

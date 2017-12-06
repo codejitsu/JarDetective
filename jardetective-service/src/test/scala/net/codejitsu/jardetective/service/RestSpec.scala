@@ -1,17 +1,17 @@
 package net.codejitsu.jardetective.service
 
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import net.codejitsu.jardetective.graph.mock.MockDependencyGraph
 import net.codejitsu.jardetective.model.Model.{Dependency, DependencySnapshot, Module}
 import org.scalatest.{Matchers, WordSpec}
+import spray.json.DefaultJsonProtocol
 
-class RestSpec extends WordSpec with Matchers with ScalatestRouteTest {
+class RestSpec extends WordSpec with Matchers with ScalatestRouteTest
+  with SprayJsonSupport with DefaultJsonProtocol {
   //TODO add property based tests
   //TODO add graph service injection
-
-  import de.heikoseeberger.akkahttpcirce.CirceSupport._
-  import io.circe.generic.auto._
 
   val validSnapshot = DependencySnapshot(
     module = Module(
@@ -28,7 +28,11 @@ class RestSpec extends WordSpec with Matchers with ScalatestRouteTest {
     ))
   )
 
-  val service = new JarDetectiveService with MockDependencyGraph
+  implicit val dependencyFormat = jsonFormat4(Dependency)
+  implicit val moduleFormat = jsonFormat3(Module)
+  implicit val snapshotFormat = jsonFormat2(DependencySnapshot)
+
+  def service = new JarDetectiveService with MockDependencyGraph
 
   "The Jar Detective service" should {
     "return 201 (Created) for POST requests on /dependencies endpoint" in {
@@ -38,27 +42,29 @@ class RestSpec extends WordSpec with Matchers with ScalatestRouteTest {
     }
 
     "return 404 (Not Found) for GET requests on /dependencies endpoint for an unknown artifact" in {
-      Get("/dependencies/mymodule/myorganization/1.2-dev/") ~> service.route ~> check {
+      Get("/dependencies/myorganization/mymodule/1.2-dev/") ~> service.route ~> check {
         status shouldBe StatusCodes.NotFound
         entityAs[String].isEmpty shouldBe true
       }
     }
-/*
-    "return 200 (OK) with entity for GET requests on /module endpoint for an known artifact" in {
-      Post("/snapshot", validSnapshot) ~> service.route ~> check {
+
+    "return 200 (OK) with entity for GET requests on /dependencies endpoint for an known artifact" in {
+      val srv = service
+
+      Post("/dependencies", validSnapshot) ~> srv.route ~> check {
         status shouldBe StatusCodes.Created
       }
 
-      Get("/module/mymodule/myorganization/1.2-dev/") ~> service.route ~> check {
+      Get("/dependencies/myorganization/mymodule/1.2-dev/") ~> srv.route ~> check {
         status shouldBe StatusCodes.OK
         entityAs[String].nonEmpty shouldBe true
 
         val module = entityAs[DependencySnapshot]
 
-        module shouldBe equal(validSnapshot)
+        module shouldBe validSnapshot
       }
     }
-*/
+
     // /parents/com.google.guava/guava/19.0/
   }
 }

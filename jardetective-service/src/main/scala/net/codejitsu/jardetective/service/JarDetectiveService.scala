@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{HttpEntity, StatusCodes}
 import akka.stream.ActorMaterializer
 import net.codejitsu.jardetective.graph._
 import net.codejitsu.jardetective.model.Model.{DependencySnapshot, Module}
@@ -58,9 +58,9 @@ class JarDetectiveService {
        get {
          onComplete(lookUpOutDependencies(Module(organization, name, revision))) {
            case Success(result) => result match {
-             case GraphRetrievalSuccess => complete(StatusCodes.OK)
+             case GraphRetrievalSuccess(snapshot) => complete(StatusCodes.OK, snapshot)
 
-             case GraphRetrievalFailure => complete(StatusCodes.NotFound, "")
+             case GraphRetrievalFailure => complete(StatusCodes.NotFound, HttpEntity.Empty)
            }
 
            case Failure(ex) => complete((StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}"))

@@ -9,7 +9,7 @@ case object GraphMutationSuccess extends GraphMutationResult
 case object GraphMutationFailure extends GraphMutationResult
 
 sealed trait GraphRetrievalResult
-case object GraphRetrievalSuccess extends GraphRetrievalResult
+final case class GraphRetrievalSuccess(snapshot: DependencySnapshot) extends GraphRetrievalResult
 case object GraphRetrievalFailure extends GraphRetrievalResult
 
 /**

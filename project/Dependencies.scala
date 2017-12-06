@@ -27,10 +27,12 @@ object Dependencies {
 
   val scalatest = "org.scalatest" %% "scalatest" % scalatestVersion
 
+  val akkaSprayJson = "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpJsonVersion
+
   // ====================
 
   val jarDetectiveSbtDependencies = compile(playJson)
-  val jarDetectiveServiceDependencies = compile(akkaHttp, akkaCirce, circeCore, circeGeneric, circeParser) ++
-    test(akkaTestKit, scalatest)
+  val jarDetectiveServiceDependencies = compile(akkaHttp, akkaCirce, circeCore, circeGeneric, circeParser, akkaSprayJson) ++
+    test(akkaTestKit, scalatest, akkaSprayJson)
   val jarDetectiveGraphDependencies = test(scalatest)
 }

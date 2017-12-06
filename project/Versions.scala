@@ -10,4 +10,6 @@ object Versions {
   val circeVersion        = "0.7.0"
 
   val scalatestVersion    = "3.0.1"
+
+  val akkaHttpJsonVersion = "10.0.11"
 }
