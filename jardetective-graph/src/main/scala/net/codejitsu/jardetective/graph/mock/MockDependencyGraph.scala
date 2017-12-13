@@ -28,4 +28,6 @@ trait MockDependencyGraph extends DependencyGraph {
       Future.successful(GraphRetrievalFailure)
     }
   }
+
+  override def lookUpRoots(module: Module): Future[RootsRetrievalResult] = Future.successful(RootsRetrievalFailure)
 }

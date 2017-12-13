@@ -65,6 +65,11 @@ class RestSpec extends WordSpec with Matchers with ScalatestRouteTest
       }
     }
 
-    // /parents/com.google.guava/guava/19.0/
+    "return 404 (NotFound) for GET requests on /roots endpoint for an unknown artifact" in {
+      Get("/roots/myorganization/mymodule/test/") ~> service.route ~> check {
+        status shouldBe StatusCodes.NotFound
+        entityAs[String].isEmpty shouldBe true
+      }
+    }
   }
 }

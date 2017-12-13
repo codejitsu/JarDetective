@@ -66,6 +66,19 @@ class JarDetectiveService {
            case Failure(ex) => complete((StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}"))
          }
        }
+     } ~
+     pathPrefix("roots" / Segment / Segment / Segment) { (organization, name, revision) =>
+       get {
+         onComplete(lookUpRoots(Module(organization, name, revision))) {
+           case Success(result) => result match {
+             case RootsRetrievalSuccess(roots) => complete(StatusCodes.OK, roots)
+
+             case RootsRetrievalFailure => complete(StatusCodes.NotFound, HttpEntity.Empty)
+           }
+
+           case Failure(ex) => complete((StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}"))
+         }
+       }
      }
    }
 
