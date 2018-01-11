@@ -22,14 +22,14 @@ class JarDetectiveService {
 
      path("dependencies") {
 
-       // POST /snapshots
+       // POST /dependencies
        // {
        //   "module": {
        //     "name": ...
        //   }
        // }
 
-       // 201 - snapshot stored
+       // 201 - dependency stored
        // 400 - invalid input
 
        post {

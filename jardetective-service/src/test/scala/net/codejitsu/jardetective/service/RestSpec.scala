@@ -28,6 +28,27 @@ class RestSpec extends WordSpec with Matchers with ScalatestRouteTest
     ))
   )
 
+  val anotherValidSnapshot = DependencySnapshot(
+    module = Module(
+      organization = "coolorg",
+      name = "coolname",
+      revision = "1.2-cool"
+    ),
+
+    dependencies = List(Dependency(
+      organization = "testorganization",
+      name = "testname",
+      revision = "0.1",
+      scope = "compile"
+    ),
+    Dependency(
+      organization = "testorganization1",
+      name = "testname1",
+      revision = "0.11",
+      scope = "compile"
+    ))
+  )
+
   implicit val dependencyFormat = jsonFormat4(Dependency)
   implicit val moduleFormat = jsonFormat3(Module)
   implicit val snapshotFormat = jsonFormat2(DependencySnapshot)
@@ -69,6 +90,50 @@ class RestSpec extends WordSpec with Matchers with ScalatestRouteTest
       Get("/roots/myorganization/mymodule/test/") ~> service.route ~> check {
         status shouldBe StatusCodes.NotFound
         entityAs[String].isEmpty shouldBe true
+      }
+    }
+
+    "return 200 (OK) for GET requests on /roots endpoint for an known artifact" in {
+      val srv = service
+
+      Post("/dependencies", validSnapshot) ~> srv.route ~> check {
+        status shouldBe StatusCodes.Created
+      }
+
+      Get("/roots/testorganization/testname/0.1/") ~> srv.route ~> check {
+        status shouldBe StatusCodes.OK
+
+        entityAs[String].nonEmpty shouldBe true
+
+        val roots = entityAs[Seq[Module]]
+
+        roots.nonEmpty shouldBe true
+
+        roots.head shouldBe validSnapshot.module
+      }
+    }
+
+    "return 200 (OK) for GET requests on /roots endpoint for an known artifacts" in {
+      val srv = service
+
+      Post("/dependencies", validSnapshot) ~> srv.route ~> check {
+        status shouldBe StatusCodes.Created
+      }
+
+      Post("/dependencies", anotherValidSnapshot) ~> srv.route ~> check {
+        status shouldBe StatusCodes.Created
+      }
+
+      Get("/roots/testorganization/testname/0.1/") ~> srv.route ~> check {
+        status shouldBe StatusCodes.OK
+
+        entityAs[String].nonEmpty shouldBe true
+
+        val roots = entityAs[Seq[Module]]
+
+        roots.nonEmpty shouldBe true
+
+        roots should contain only (validSnapshot.module, anotherValidSnapshot.module)
       }
     }
   }
