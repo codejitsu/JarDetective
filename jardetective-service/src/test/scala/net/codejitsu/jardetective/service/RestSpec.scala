@@ -3,15 +3,13 @@ package net.codejitsu.jardetective.service
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import net.codejitsu.jardetective.graph.mock.MockDependencyGraph
 import net.codejitsu.jardetective.model.Model.{Dependency, DependencySnapshot, Module}
 import org.scalatest.{Matchers, WordSpec}
 import spray.json.DefaultJsonProtocol
 
-class RestSpec extends WordSpec with Matchers with ScalatestRouteTest
+abstract class RestSpec(service: Unit => JarDetectiveService) extends WordSpec with Matchers with ScalatestRouteTest
   with SprayJsonSupport with DefaultJsonProtocol {
   //TODO add property based tests
-  //TODO add graph service injection
 
   val validSnapshot = DependencySnapshot(
     module = Module(
@@ -53,24 +51,22 @@ class RestSpec extends WordSpec with Matchers with ScalatestRouteTest
   implicit val moduleFormat = jsonFormat3(Module)
   implicit val snapshotFormat = jsonFormat2(DependencySnapshot)
 
-  def service = new JarDetectiveService with MockDependencyGraph
-
   "The Jar Detective service" should {
     "return 201 (Created) for POST requests on /dependencies endpoint" in {
-      Post("/dependencies", validSnapshot) ~> service.route ~> check {
+      Post("/dependencies", validSnapshot) ~> service().route ~> check {
         status shouldBe StatusCodes.Created
       }
     }
 
     "return 404 (Not Found) for GET requests on /dependencies endpoint for an unknown artifact" in {
-      Get("/dependencies/myorganization/mymodule/1.2-dev/") ~> service.route ~> check {
+      Get("/dependencies/myorganization/mymodule/1.2-dev/") ~> service().route ~> check {
         status shouldBe StatusCodes.NotFound
         entityAs[String].isEmpty shouldBe true
       }
     }
 
     "return 200 (OK) with entity for GET requests on /dependencies endpoint for an known artifact" in {
-      val srv = service
+      val srv = service()
 
       Post("/dependencies", validSnapshot) ~> srv.route ~> check {
         status shouldBe StatusCodes.Created
@@ -87,14 +83,14 @@ class RestSpec extends WordSpec with Matchers with ScalatestRouteTest
     }
 
     "return 404 (NotFound) for GET requests on /roots endpoint for an unknown artifact" in {
-      Get("/roots/myorganization/mymodule/test/") ~> service.route ~> check {
+      Get("/roots/myorganization/mymodule/test/") ~> service().route ~> check {
         status shouldBe StatusCodes.NotFound
         entityAs[String].isEmpty shouldBe true
       }
     }
 
     "return 200 (OK) for GET requests on /roots endpoint for an known artifact" in {
-      val srv = service
+      val srv = service()
 
       Post("/dependencies", validSnapshot) ~> srv.route ~> check {
         status shouldBe StatusCodes.Created
@@ -114,7 +110,7 @@ class RestSpec extends WordSpec with Matchers with ScalatestRouteTest
     }
 
     "return 200 (OK) for GET requests on /roots endpoint for an known artifacts" in {
-      val srv = service
+      val srv = service()
 
       Post("/dependencies", validSnapshot) ~> srv.route ~> check {
         status shouldBe StatusCodes.Created
