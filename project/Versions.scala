@@ -12,4 +12,6 @@ object Versions {
   val scalatestVersion    = "3.0.1"
 
   val akkaHttpJsonVersion = "10.0.11"
+
+  val neo44jVersion       = "3.3.1"
 }
