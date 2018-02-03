@@ -2,55 +2,133 @@ package net.codejitsu.jardetective.graph.neo4j
 
 import java.io.File
 
-import net.codejitsu.jardetective.graph.{DependencyGraph, GraphMutationResult, GraphRetrievalResult, RootsRetrievalResult}
-import net.codejitsu.jardetective.model.Model.{DependencySnapshot, Module}
+import net.codejitsu.jardetective.graph._
+import net.codejitsu.jardetective.model.Model.{Dependency, DependencySnapshot, Module}
 
 import scala.concurrent.Future
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.io.fs.FileUtils
-import java.io.IOException
 
-import org.neo4j.graphdb.{GraphDatabaseService, RelationshipType}
+import org.neo4j.graphdb.{GraphDatabaseService, Label, Node, RelationshipType}
 
 trait EmbeddedNeo4jGraph extends DependencyGraph {
-  lazy val databaseDirectory = new File("target/neo4j-hello-db")
-  lazy val graphDb = new GraphDatabaseFactory().newEmbeddedDatabase(databaseDirectory)
+  import net.codejitsu.jardetective.model.ModelOps._
+  import EmbeddedNeo4jGraph.graphDb
 
-  createDb()
+  require(graphDb.isAvailable(1000))
 
-  object Knows extends RelationshipType {
-    override def name(): String = "Knows"
+  object Uses extends RelationshipType {
+    override def name(): String = "Uses"
   }
 
-  @throws[IOException]
-  def createDb(): Unit = {
-    FileUtils.deleteRecursively(databaseDirectory)
+  object UsedBy extends RelationshipType {
+    override def name(): String = "UsedBy"
+  }
 
-    registerShutdownHook(graphDb)
+  def addDependencyNode(dependency: Dependency, moduleNode: Node): Unit = {
+    val dependencyExists = graphDb.execute(
+      s"""
+         | MATCH (d:Dependency) WHERE d.name = '${dependency.name}' AND d.organization = '${dependency.organization}' AND d.revision = '${dependency.revision}' AND d.scope = '${dependency.scope}' RETURN d
+       """.stripMargin
+    )
+
+    if (!dependencyExists.hasNext) {
+      val dependencyNode = graphDb.createNode(Label.label("Dependency"))
+      dependencyNode.setProperty("name", dependency.name)
+      dependencyNode.setProperty("organization", dependency.organization)
+      dependencyNode.setProperty("revision", dependency.revision)
+      dependencyNode.setProperty("scope", dependency.scope)
+
+      moduleNode.createRelationshipTo(dependencyNode, Uses)
+      dependencyNode.createRelationshipTo(moduleNode, UsedBy)
+    }
+  }
+
+  override def addOrUpdateSnapshot(snapshot: DependencySnapshot): Future[GraphMutationResult] = {
+    try {
+      val tx = graphDb.beginTx()
+      try {
+        val moduleExists = graphDb.execute(
+          s"""
+             | MATCH (m: Module) WHERE m.key = '${snapshot.module.key}' RETURN m
+           """.stripMargin
+        )
+
+        if (!moduleExists.hasNext) {
+          val moduleNode = graphDb.createNode(Label.label("Module"))
+          moduleNode.setProperty("name", snapshot.module.name)
+          moduleNode.setProperty("organization", snapshot.module.organization)
+          moduleNode.setProperty("revision", snapshot.module.revision)
+          moduleNode.setProperty("key", snapshot.module.key)
+
+          snapshot.dependencies.foreach { dependency =>
+            addDependencyNode(dependency, moduleNode)
+          }
+        }
+
+        tx.success()
+
+        Future.successful(GraphMutationSuccess)
+      } finally if (tx != null) tx.close()
+    } catch {
+      case th: Throwable => Future.failed(th)
+    }
+  }
+
+  override def lookUpOutDependencies(module: Module): Future[GraphRetrievalResult] = {
+    import scala.collection.JavaConverters._
+    import scala.collection.mutable.ListBuffer
 
     try {
-      val tx = graphDb.beginTx
-      try {
-        val firstNode = graphDb.createNode
-        firstNode.setProperty("message", "Hello, ")
+      val result = graphDb.execute(
+        s"""
+           | MATCH (d:Dependency) <-[Uses]- (m:Module) WHERE m.key = '${module.key}' RETURN d.name, d.organization, d.revision, d.scope
+       """.stripMargin
+      )
 
-        val secondNode = graphDb.createNode
-        secondNode.setProperty("message", "World!")
+      val dependencies = new ListBuffer[Dependency]()
 
-        val relationship = firstNode.createRelationshipTo(secondNode, Knows)
+      while (result.hasNext()) {
+        val row = result.next()
 
-        relationship.setProperty("message", "brave Neo4j ")
+        val dependencyFields = result.columns().asScala.map(key => (key, row.get(key)))
+        val dependency = dependencyFields.foldLeft(Dependency("", "", "", "")) { (dep, dat) =>
+          dat._1 match {
+            case "d.name" => dep.copy(name = dat._2.toString)
+            case "d.organization" => dep.copy(organization = dat._2.toString)
+            case "d.revision" => dep.copy(revision = dat._2.toString)
+            case "d.scope" => dep.copy(scope = dat._2.toString)
+          }
+        }
 
-        println(firstNode.getProperty("message"))
-        println(relationship.getProperty("message"))
-        println(secondNode.getProperty("message"))
+        dependencies += dependency
+      }
 
-        val greeting = firstNode.getProperty("message").asInstanceOf[String] + relationship.getProperty("message").asInstanceOf[String] + secondNode.getProperty("message").asInstanceOf[String]
-        println(greeting)
+      if (dependencies.nonEmpty) {
+        val snapshot = DependencySnapshot(module, dependencies)
 
-        tx.success
-      } finally if (tx != null) tx.close()
+        Future.successful(GraphRetrievalSuccess(snapshot))
+      } else {
+        Future.successful(GraphRetrievalFailure)
+      }
+    } catch {
+      case th: Throwable =>
+        println(th)
+        Future.failed(th)
     }
+  }
+
+  override def lookUpRoots(module: Module): Future[RootsRetrievalResult] = Future.failed(new RuntimeException)
+}
+
+object EmbeddedNeo4jGraph {
+  lazy val databaseDirectory = new File("target/neo4j-embedded")
+  lazy val graphDb = {
+    FileUtils.deleteRecursively(databaseDirectory)
+    val db = new GraphDatabaseFactory().newEmbeddedDatabase(databaseDirectory)
+    registerShutdownHook(db)
+
+    db
   }
 
   def shutDown(): Unit = {
@@ -67,8 +145,4 @@ trait EmbeddedNeo4jGraph extends DependencyGraph {
       }
     })
   }
-
-  override def addOrUpdateSnapshot(snapshot: DependencySnapshot): Future[GraphMutationResult] = Future.failed(new RuntimeException)
-  override def lookUpOutDependencies(module: Module): Future[GraphRetrievalResult] = Future.failed(new RuntimeException)
-  override def lookUpRoots(module: Module): Future[RootsRetrievalResult] = Future.failed(new RuntimeException)
 }

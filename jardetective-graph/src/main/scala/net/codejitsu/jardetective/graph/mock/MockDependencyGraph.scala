@@ -36,8 +36,6 @@ trait MockDependencyGraph extends DependencyGraph {
       Module(parts(0), parts(1), parts(2))
     }
 
-    println(graph)
-
     val roots = graph.filter(r => r._2.filter(d => d.name == module.name && d.organization == module.organization && d.revision == module.revision).nonEmpty).keys.toSeq
 
     if (roots.isEmpty) {

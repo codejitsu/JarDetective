@@ -1,5 +1,7 @@
 package net.codejitsu.jardetective.service
 
+import java.util.UUID
+
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
@@ -59,7 +61,8 @@ abstract class RestSpec(service: Unit => JarDetectiveService) extends WordSpec w
     }
 
     "return 404 (Not Found) for GET requests on /dependencies endpoint for an unknown artifact" in {
-      Get("/dependencies/myorganization/mymodule/1.2-dev/") ~> service().route ~> check {
+      val url = s"/dependencies/${UUID.randomUUID().toString}/mymodule/1.2-dev/"
+      Get(url) ~> service().route ~> check {
         status shouldBe StatusCodes.NotFound
         entityAs[String].isEmpty shouldBe true
       }
