@@ -86,7 +86,7 @@ abstract class RestSpec(service: Unit => JarDetectiveService) extends WordSpec w
     }
 
     "return 404 (NotFound) for GET requests on /roots endpoint for an unknown artifact" in {
-      Get("/roots/myorganization/mymodule/test/") ~> service().route ~> check {
+      Get(s"/roots/myorganization/mymodule/${UUID.randomUUID().toString}/compile") ~> service().route ~> check {
         status shouldBe StatusCodes.NotFound
         entityAs[String].isEmpty shouldBe true
       }
@@ -99,7 +99,7 @@ abstract class RestSpec(service: Unit => JarDetectiveService) extends WordSpec w
         status shouldBe StatusCodes.Created
       }
 
-      Get("/roots/testorganization/testname/0.1/") ~> srv.route ~> check {
+      Get("/roots/testorganization/testname/0.1/compile") ~> srv.route ~> check {
         status shouldBe StatusCodes.OK
 
         entityAs[String].nonEmpty shouldBe true
@@ -112,7 +112,7 @@ abstract class RestSpec(service: Unit => JarDetectiveService) extends WordSpec w
       }
     }
 
-    "return 200 (OK) for GET requests on /roots endpoint for an known artifacts" in {
+    "return 200 (OK) for GET requests on /roots endpoint for some known artifacts" in {
       val srv = service()
 
       Post("/dependencies", validSnapshot) ~> srv.route ~> check {
@@ -123,7 +123,7 @@ abstract class RestSpec(service: Unit => JarDetectiveService) extends WordSpec w
         status shouldBe StatusCodes.Created
       }
 
-      Get("/roots/testorganization/testname/0.1/") ~> srv.route ~> check {
+      Get("/roots/testorganization/testname/0.1/compile") ~> srv.route ~> check {
         status shouldBe StatusCodes.OK
 
         entityAs[String].nonEmpty shouldBe true

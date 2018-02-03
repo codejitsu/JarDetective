@@ -7,7 +7,7 @@ import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.{HttpEntity, StatusCodes}
 import akka.stream.ActorMaterializer
 import net.codejitsu.jardetective.graph._
-import net.codejitsu.jardetective.model.Model.{DependencySnapshot, Module}
+import net.codejitsu.jardetective.model.Model.{Dependency, DependencySnapshot, Module}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -67,9 +67,9 @@ class JarDetectiveService {
          }
        }
      } ~
-     pathPrefix("roots" / Segment / Segment / Segment) { (organization, name, revision) =>
+     pathPrefix("roots" / Segment / Segment / Segment / Segment) { (organization, name, revision, scope) =>
        get {
-         onComplete(lookUpRoots(Module(organization, name, revision))) {
+         onComplete(lookUpRoots(Dependency(organization, name, revision, scope))) {
            case Success(result) => result match {
              case RootsRetrievalSuccess(roots) => complete(StatusCodes.OK, roots)
 

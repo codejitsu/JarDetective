@@ -29,14 +29,14 @@ trait MockDependencyGraph extends DependencyGraph {
     }
   }
 
-  override def lookUpRoots(module: Module): Future[RootsRetrievalResult] = {
+  override def lookUpRoots(dependency: Dependency): Future[RootsRetrievalResult] = {
     def toModule(key: String): Module = {
       val parts = key.split(":")
 
       Module(parts(0), parts(1), parts(2))
     }
 
-    val roots = graph.filter(r => r._2.filter(d => d.name == module.name && d.organization == module.organization && d.revision == module.revision).nonEmpty).keys.toSeq
+    val roots = graph.filter(r => r._2.filter(d => d == dependency).nonEmpty).keys.toSeq
 
     if (roots.isEmpty) {
       Future.successful(RootsRetrievalFailure)

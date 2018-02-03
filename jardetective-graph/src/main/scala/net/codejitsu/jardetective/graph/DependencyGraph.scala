@@ -1,6 +1,6 @@
 package net.codejitsu.jardetective.graph
 
-import net.codejitsu.jardetective.model.Model.{DependencySnapshot, Module}
+import net.codejitsu.jardetective.model.Model.{Dependency, DependencySnapshot, Module}
 
 import scala.concurrent.Future
 
@@ -22,5 +22,5 @@ case object RootsRetrievalFailure extends RootsRetrievalResult
 trait DependencyGraph {
   def addOrUpdateSnapshot(snapshot: DependencySnapshot): Future[GraphMutationResult]
   def lookUpOutDependencies(module: Module): Future[GraphRetrievalResult]
-  def lookUpRoots(module: Module): Future[RootsRetrievalResult]
+  def lookUpRoots(dependency: Dependency): Future[RootsRetrievalResult]
 }

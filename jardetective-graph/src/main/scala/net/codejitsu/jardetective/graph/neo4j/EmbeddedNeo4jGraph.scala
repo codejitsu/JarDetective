@@ -25,10 +25,13 @@ trait EmbeddedNeo4jGraph extends DependencyGraph {
     override def name(): String = "UsedBy"
   }
 
-  def addDependencyNode(dependency: Dependency, moduleNode: Node): Unit = {
+  def addDependencyNode(dependency: Dependency, moduleNode: Node, module: Module): Unit = {
     val dependencyExists = graphDb.execute(
       s"""
-         | MATCH (d:Dependency) WHERE d.name = '${dependency.name}' AND d.organization = '${dependency.organization}' AND d.revision = '${dependency.revision}' AND d.scope = '${dependency.scope}' RETURN d
+         | MATCH (d:Dependency) <-[UsedBy]- (m:Module)
+         | WHERE d.name = '${dependency.name}' AND d.organization = '${dependency.organization}' AND d.revision = '${dependency.revision}' AND d.scope = '${dependency.scope}'
+         | AND m.key = '${module.key}'
+         | RETURN d
        """.stripMargin
     )
 
@@ -38,6 +41,7 @@ trait EmbeddedNeo4jGraph extends DependencyGraph {
       dependencyNode.setProperty("organization", dependency.organization)
       dependencyNode.setProperty("revision", dependency.revision)
       dependencyNode.setProperty("scope", dependency.scope)
+      dependencyNode.setProperty("key", dependency.key)
 
       moduleNode.createRelationshipTo(dependencyNode, Uses)
       dependencyNode.createRelationshipTo(moduleNode, UsedBy)
@@ -62,7 +66,7 @@ trait EmbeddedNeo4jGraph extends DependencyGraph {
           moduleNode.setProperty("key", snapshot.module.key)
 
           snapshot.dependencies.foreach { dependency =>
-            addDependencyNode(dependency, moduleNode)
+            addDependencyNode(dependency, moduleNode, snapshot.module)
           }
         }
 
@@ -92,12 +96,12 @@ trait EmbeddedNeo4jGraph extends DependencyGraph {
         val row = result.next()
 
         val dependencyFields = result.columns().asScala.map(key => (key, row.get(key)))
-        val dependency = dependencyFields.foldLeft(Dependency("", "", "", "")) { (dep, dat) =>
-          dat._1 match {
-            case "d.name" => dep.copy(name = dat._2.toString)
-            case "d.organization" => dep.copy(organization = dat._2.toString)
-            case "d.revision" => dep.copy(revision = dat._2.toString)
-            case "d.scope" => dep.copy(scope = dat._2.toString)
+        val dependency = dependencyFields.foldLeft(Dependency("", "", "", "")) { (dep, fieldValue) =>
+          fieldValue._1 match {
+            case "d.name" => dep.copy(name = fieldValue._2.toString)
+            case "d.organization" => dep.copy(organization = fieldValue._2.toString)
+            case "d.revision" => dep.copy(revision = fieldValue._2.toString)
+            case "d.scope" => dep.copy(scope = fieldValue._2.toString)
           }
         }
 
@@ -113,12 +117,48 @@ trait EmbeddedNeo4jGraph extends DependencyGraph {
       }
     } catch {
       case th: Throwable =>
-        println(th)
         Future.failed(th)
     }
   }
 
-  override def lookUpRoots(module: Module): Future[RootsRetrievalResult] = Future.failed(new RuntimeException)
+  override def lookUpRoots(dependency: Dependency): Future[RootsRetrievalResult] = {
+    import scala.collection.JavaConverters._
+    import scala.collection.mutable.ListBuffer
+
+    try {
+      val result = graphDb.execute(
+        s"""
+           | MATCH (m:Module) <-[UsedBy]- (d:Dependency) WHERE d.key = '${dependency.key}' RETURN m.name, m.organization, m.revision
+       """.stripMargin
+      )
+
+      val modules = new ListBuffer[Module]()
+
+      while (result.hasNext()) {
+        val row = result.next()
+
+        val moduleFields = result.columns().asScala.map(key => (key, row.get(key)))
+        val module = moduleFields.foldLeft(Module("", "", "")) { (mod, fieldValue) =>
+          fieldValue._1 match {
+            case "m.name" => mod.copy(name = fieldValue._2.toString)
+            case "m.organization" => mod.copy(organization = fieldValue._2.toString)
+            case "m.revision" => mod.copy(revision = fieldValue._2.toString)
+          }
+        }
+
+        modules += module
+      }
+
+      if (modules.nonEmpty) {
+        Future.successful(RootsRetrievalSuccess(modules))
+      } else {
+        Future.successful(RootsRetrievalFailure)
+      }
+    } catch {
+      case th: Throwable =>
+        Future.failed(th)
+    }
+  }
 }
 
 object EmbeddedNeo4jGraph {
