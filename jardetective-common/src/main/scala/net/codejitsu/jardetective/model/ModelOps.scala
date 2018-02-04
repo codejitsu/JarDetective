@@ -1,16 +1,16 @@
 package net.codejitsu.jardetective.model
 
-import net.codejitsu.jardetective.model.Model.{Dependency, Module}
+import net.codejitsu.jardetective.model.Model.{Dependency, Jar}
 
 /**
   * Utils for Model.
   */
 object ModelOps {
-  implicit class ModuleLike(module: Module) {
-    lazy val key: String = s"${module.organization}:${module.name}:${module.revision}"
+  implicit class ModuleLike(jar: Jar) {
+    lazy val key: String = s"${jar.organization}:${jar.name}:${jar.revision}"
   }
 
   implicit class DependencyLike(dependency: Dependency) {
-    lazy val key: String = s"${dependency.organization}:${dependency.name}:${dependency.revision}:${dependency.scope}"
+    lazy val key: String = s"${dependency.jar.key}:${dependency.scope}"
   }
 }

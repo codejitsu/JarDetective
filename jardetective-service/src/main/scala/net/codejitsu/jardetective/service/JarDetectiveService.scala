@@ -7,7 +7,7 @@ import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.{HttpEntity, StatusCodes}
 import akka.stream.ActorMaterializer
 import net.codejitsu.jardetective.graph._
-import net.codejitsu.jardetective.model.Model.{Dependency, DependencySnapshot, Module}
+import net.codejitsu.jardetective.model.Model.{Dependency, Snapshot, Jar}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -34,14 +34,14 @@ class JarDetectiveService {
 
        post {
          decodeRequest {
-           entity(as[DependencySnapshot]) { snapshot =>
+           entity(as[Snapshot]) { snapshot =>
              // add snapshot to the graph
              onComplete(addOrUpdateSnapshot(snapshot)) {
                case Success(result) => result match {
                  case GraphMutationSuccess =>
                    complete(
                      StatusCodes.Created,
-                     s"Snapshot received for module: ${snapshot.module.organization}.${snapshot.module.name}-${snapshot.module.revision}"
+                     s"Snapshot received for module: ${snapshot.jar.organization}.${snapshot.jar.name}-${snapshot.jar.revision}"
                    )
                  case GraphMutationFailure =>
                    complete(
@@ -56,7 +56,7 @@ class JarDetectiveService {
      } ~
      pathPrefix("dependencies" / Segment / Segment / Segment) { (organization, name, revision) =>
        get {
-         onComplete(lookUpOutDependencies(Module(organization, name, revision))) {
+         onComplete(lookUpOutDependencies(Jar(organization, name, revision))) {
            case Success(result) => result match {
              case GraphRetrievalSuccess(snapshot) => complete(StatusCodes.OK, snapshot)
 
@@ -69,7 +69,7 @@ class JarDetectiveService {
      } ~
      pathPrefix("roots" / Segment / Segment / Segment / Segment) { (organization, name, revision, scope) =>
        get {
-         onComplete(lookUpRoots(Dependency(organization, name, revision, scope))) {
+         onComplete(lookUpRoots(Dependency(Jar(organization, name, revision), scope))) {
            case Success(result) => result match {
              case RootsRetrievalSuccess(roots) => complete(StatusCodes.OK, roots)
 

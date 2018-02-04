@@ -1,7 +1,7 @@
 package net.codejitsu.jardetective.graph.mock
 
 import net.codejitsu.jardetective.graph._
-import net.codejitsu.jardetective.model.Model.{Dependency, DependencySnapshot, Module}
+import net.codejitsu.jardetective.model.Model.{Dependency, Snapshot, Jar}
 import net.codejitsu.jardetective.model.ModelOps._
 
 import scala.concurrent.Future
@@ -14,15 +14,15 @@ trait MockDependencyGraph extends DependencyGraph {
 
   val graph = Map.empty[String, Seq[Dependency]]
 
-  override def addOrUpdateSnapshot(snapshot: DependencySnapshot): Future[GraphMutationResult] = {
-    graph.update(snapshot.module.key, snapshot.dependencies)
+  override def addOrUpdateSnapshot(snapshot: Snapshot): Future[GraphMutationResult] = {
+    graph.update(snapshot.jar.key, snapshot.dependencies)
 
     Future.successful(GraphMutationSuccess)
   }
 
-  override def lookUpOutDependencies(module: Module): Future[GraphRetrievalResult] = {
+  override def lookUpOutDependencies(module: Jar): Future[GraphRetrievalResult] = {
     if (graph.contains(module.key)) {
-      val snapshot = DependencySnapshot(module, graph.getOrElse(module.key, Seq.empty))
+      val snapshot = Snapshot(module, graph.getOrElse(module.key, Seq.empty))
       Future.successful(GraphRetrievalSuccess(snapshot))
     } else {
       Future.successful(GraphRetrievalFailure)
@@ -30,10 +30,10 @@ trait MockDependencyGraph extends DependencyGraph {
   }
 
   override def lookUpRoots(dependency: Dependency): Future[RootsRetrievalResult] = {
-    def toModule(key: String): Module = {
+    def toModule(key: String): Jar = {
       val parts = key.split(":")
 
-      Module(parts(0), parts(1), parts(2))
+      Jar(parts(0), parts(1), parts(2))
     }
 
     val roots = graph.filter(r => r._2.filter(d => d == dependency).nonEmpty).keys.toSeq

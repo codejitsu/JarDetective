@@ -5,7 +5,7 @@ import java.util.UUID
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import net.codejitsu.jardetective.model.Model.{Dependency, DependencySnapshot, Module}
+import net.codejitsu.jardetective.model.Model.{Dependency, Snapshot, Jar}
 import org.scalatest.{Matchers, WordSpec}
 import spray.json.DefaultJsonProtocol
 
@@ -13,45 +13,45 @@ abstract class RestSpec(service: Unit => JarDetectiveService) extends WordSpec w
   with SprayJsonSupport with DefaultJsonProtocol {
   //TODO add property based tests
 
-  val validSnapshot = DependencySnapshot(
-    module = Module(
+  val validSnapshot = Snapshot(
+    jar = Jar(
       organization = "myorganization",
       name = "mymodule",
       revision = "1.2-dev"
     ),
 
     dependencies = List(Dependency(
-      organization = "testorganization",
+      jar = Jar(organization = "testorganization",
       name = "testname",
-      revision = "0.1",
+      revision = "0.1"),
       scope = "compile"
     ))
   )
 
-  val anotherValidSnapshot = DependencySnapshot(
-    module = Module(
+  val anotherValidSnapshot = Snapshot(
+    jar = Jar(
       organization = "coolorg",
       name = "coolname",
       revision = "1.2-cool"
     ),
 
     dependencies = List(Dependency(
-      organization = "testorganization",
+      jar = Jar(organization = "testorganization",
       name = "testname",
-      revision = "0.1",
+      revision = "0.1"),
       scope = "compile"
     ),
     Dependency(
-      organization = "testorganization1",
+      jar = Jar(organization = "testorganization1",
       name = "testname1",
-      revision = "0.11",
+      revision = "0.11"),
       scope = "compile"
     ))
   )
 
-  implicit val dependencyFormat = jsonFormat4(Dependency)
-  implicit val moduleFormat = jsonFormat3(Module)
-  implicit val snapshotFormat = jsonFormat2(DependencySnapshot)
+  implicit val jarFormat = jsonFormat3(Jar)
+  implicit val dependencyFormat = jsonFormat2(Dependency)
+  implicit val snapshotFormat = jsonFormat2(Snapshot)
 
   "The Jar Detective service" should {
     "return 201 (Created) for POST requests on /dependencies endpoint" in {
@@ -79,7 +79,7 @@ abstract class RestSpec(service: Unit => JarDetectiveService) extends WordSpec w
         status shouldBe StatusCodes.OK
         entityAs[String].nonEmpty shouldBe true
 
-        val module = entityAs[DependencySnapshot]
+        val module = entityAs[Snapshot]
 
         module shouldBe validSnapshot
       }
@@ -104,11 +104,11 @@ abstract class RestSpec(service: Unit => JarDetectiveService) extends WordSpec w
 
         entityAs[String].nonEmpty shouldBe true
 
-        val roots = entityAs[Seq[Module]]
+        val roots = entityAs[Seq[Jar]]
 
         roots.nonEmpty shouldBe true
 
-        roots.head shouldBe validSnapshot.module
+        roots.head shouldBe validSnapshot.jar
       }
     }
 
@@ -128,11 +128,11 @@ abstract class RestSpec(service: Unit => JarDetectiveService) extends WordSpec w
 
         entityAs[String].nonEmpty shouldBe true
 
-        val roots = entityAs[Seq[Module]]
+        val roots = entityAs[Seq[Jar]]
 
         roots.nonEmpty shouldBe true
 
-        roots should contain only (validSnapshot.module, anotherValidSnapshot.module)
+        roots should contain only (validSnapshot.jar, anotherValidSnapshot.jar)
       }
     }
   }

@@ -3,7 +3,7 @@ package net.codejitsu.jardetective.graph.neo4j
 import java.io.File
 
 import net.codejitsu.jardetective.graph._
-import net.codejitsu.jardetective.model.Model.{Dependency, DependencySnapshot, Module}
+import net.codejitsu.jardetective.model.Model.{Dependency, Snapshot, Jar}
 
 import scala.concurrent.Future
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
@@ -25,48 +25,48 @@ trait EmbeddedNeo4jGraph extends DependencyGraph {
     override def name(): String = "UsedBy"
   }
 
-  def addDependencyNode(dependency: Dependency, moduleNode: Node, module: Module): Unit = {
+  def addDependencyNode(dependency: Dependency, jarNode: Node, jar: Jar): Unit = {
     val dependencyExists = graphDb.execute(
       s"""
-         | MATCH (d:Dependency) <-[UsedBy]- (m:Module)
-         | WHERE d.name = '${dependency.name}' AND d.organization = '${dependency.organization}' AND d.revision = '${dependency.revision}' AND d.scope = '${dependency.scope}'
-         | AND m.key = '${module.key}'
-         | RETURN d
+         | MATCH (dj:Jar) <-[UsedBy]- (j:Jar)
+         | WHERE dj.name = '${dependency.jar.name}' AND dj.organization = '${dependency.jar.organization}' AND dj.revision = '${dependency.jar.revision}' AND dj.scope = '${dependency.scope}'
+         | AND j.key = '${jar.key}'
+         | RETURN dj
        """.stripMargin
     )
 
     if (!dependencyExists.hasNext) {
-      val dependencyNode = graphDb.createNode(Label.label("Dependency"))
-      dependencyNode.setProperty("name", dependency.name)
-      dependencyNode.setProperty("organization", dependency.organization)
-      dependencyNode.setProperty("revision", dependency.revision)
-      dependencyNode.setProperty("scope", dependency.scope)
-      dependencyNode.setProperty("key", dependency.key)
+      val dependencyJarNode = graphDb.createNode(Label.label("Jar"))
+      dependencyJarNode.setProperty("name", dependency.jar.name)
+      dependencyJarNode.setProperty("organization", dependency.jar.organization)
+      dependencyJarNode.setProperty("revision", dependency.jar.revision)
+      dependencyJarNode.setProperty("scope", dependency.scope)
+      dependencyJarNode.setProperty("key", dependency.key)
 
-      moduleNode.createRelationshipTo(dependencyNode, Uses)
-      dependencyNode.createRelationshipTo(moduleNode, UsedBy)
+      jarNode.createRelationshipTo(dependencyJarNode, Uses)
+      dependencyJarNode.createRelationshipTo(jarNode, UsedBy)
     }
   }
 
-  override def addOrUpdateSnapshot(snapshot: DependencySnapshot): Future[GraphMutationResult] = {
+  override def addOrUpdateSnapshot(snapshot: Snapshot): Future[GraphMutationResult] = {
     try {
       val tx = graphDb.beginTx()
       try {
-        val moduleExists = graphDb.execute(
+        val jarExists = graphDb.execute(
           s"""
-             | MATCH (m: Module) WHERE m.key = '${snapshot.module.key}' RETURN m
+             | MATCH (j: Jar) WHERE j.key = '${snapshot.jar.key}' RETURN j
            """.stripMargin
         )
 
-        if (!moduleExists.hasNext) {
-          val moduleNode = graphDb.createNode(Label.label("Module"))
-          moduleNode.setProperty("name", snapshot.module.name)
-          moduleNode.setProperty("organization", snapshot.module.organization)
-          moduleNode.setProperty("revision", snapshot.module.revision)
-          moduleNode.setProperty("key", snapshot.module.key)
+        if (!jarExists.hasNext) {
+          val jarNode = graphDb.createNode(Label.label("Jar"))
+          jarNode.setProperty("name", snapshot.jar.name)
+          jarNode.setProperty("organization", snapshot.jar.organization)
+          jarNode.setProperty("revision", snapshot.jar.revision)
+          jarNode.setProperty("key", snapshot.jar.key)
 
           snapshot.dependencies.foreach { dependency =>
-            addDependencyNode(dependency, moduleNode, snapshot.module)
+            addDependencyNode(dependency, jarNode, snapshot.jar)
           }
         }
 
@@ -79,14 +79,14 @@ trait EmbeddedNeo4jGraph extends DependencyGraph {
     }
   }
 
-  override def lookUpOutDependencies(module: Module): Future[GraphRetrievalResult] = {
+  override def lookUpOutDependencies(jar: Jar): Future[GraphRetrievalResult] = {
     import scala.collection.JavaConverters._
     import scala.collection.mutable.ListBuffer
 
     try {
       val result = graphDb.execute(
         s"""
-           | MATCH (d:Dependency) <-[Uses]- (m:Module) WHERE m.key = '${module.key}' RETURN d.name, d.organization, d.revision, d.scope
+           | MATCH (jd:Jar) <-[Uses]- (j:Jar) WHERE j.key = '${jar.key}' RETURN jd.name, jd.organization, jd.revision, jd.scope
        """.stripMargin
       )
 
@@ -96,12 +96,12 @@ trait EmbeddedNeo4jGraph extends DependencyGraph {
         val row = result.next()
 
         val dependencyFields = result.columns().asScala.map(key => (key, row.get(key)))
-        val dependency = dependencyFields.foldLeft(Dependency("", "", "", "")) { (dep, fieldValue) =>
+        val dependency = dependencyFields.foldLeft(Dependency(Jar("", "", ""), "")) { (dep, fieldValue) =>
           fieldValue._1 match {
-            case "d.name" => dep.copy(name = fieldValue._2.toString)
-            case "d.organization" => dep.copy(organization = fieldValue._2.toString)
-            case "d.revision" => dep.copy(revision = fieldValue._2.toString)
-            case "d.scope" => dep.copy(scope = fieldValue._2.toString)
+            case "jd.name" => dep.copy(jar = dep.jar.copy(name = fieldValue._2.toString))
+            case "jd.organization" => dep.copy(jar = dep.jar.copy(organization = fieldValue._2.toString))
+            case "jd.revision" => dep.copy(jar = dep.jar.copy(revision = fieldValue._2.toString))
+            case "jd.scope" => dep.copy(scope = fieldValue._2.toString)
           }
         }
 
@@ -109,7 +109,7 @@ trait EmbeddedNeo4jGraph extends DependencyGraph {
       }
 
       if (dependencies.nonEmpty) {
-        val snapshot = DependencySnapshot(module, dependencies)
+        val snapshot = Snapshot(jar, dependencies)
 
         Future.successful(GraphRetrievalSuccess(snapshot))
       } else {
@@ -128,29 +128,29 @@ trait EmbeddedNeo4jGraph extends DependencyGraph {
     try {
       val result = graphDb.execute(
         s"""
-           | MATCH (m:Module) <-[UsedBy]- (d:Dependency) WHERE d.key = '${dependency.key}' RETURN m.name, m.organization, m.revision
+           | MATCH (j:Jar) <-[UsedBy]- (jd:Jar) WHERE jd.key = '${dependency.key}' RETURN j.name, j.organization, j.revision
        """.stripMargin
       )
 
-      val modules = new ListBuffer[Module]()
+      val jars = new ListBuffer[Jar]()
 
       while (result.hasNext()) {
         val row = result.next()
 
-        val moduleFields = result.columns().asScala.map(key => (key, row.get(key)))
-        val module = moduleFields.foldLeft(Module("", "", "")) { (mod, fieldValue) =>
+        val jarFields = result.columns().asScala.map(key => (key, row.get(key)))
+        val jar = jarFields.foldLeft(Jar("", "", "")) { (j, fieldValue) =>
           fieldValue._1 match {
-            case "m.name" => mod.copy(name = fieldValue._2.toString)
-            case "m.organization" => mod.copy(organization = fieldValue._2.toString)
-            case "m.revision" => mod.copy(revision = fieldValue._2.toString)
+            case "j.name" => j.copy(name = fieldValue._2.toString)
+            case "j.organization" => j.copy(organization = fieldValue._2.toString)
+            case "j.revision" => j.copy(revision = fieldValue._2.toString)
           }
         }
 
-        modules += module
+        jars += jar
       }
 
-      if (modules.nonEmpty) {
-        Future.successful(RootsRetrievalSuccess(modules))
+      if (jars.nonEmpty) {
+        Future.successful(RootsRetrievalSuccess(jars))
       } else {
         Future.successful(RootsRetrievalFailure)
       }

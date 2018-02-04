@@ -6,9 +6,9 @@ import play.api.libs.json.Json
 import net.codejitsu.jardetective.model.Model._
 
 object JarDetectivePlugin extends AutoPlugin {
-  implicit val moduleFormat = Json.format[Module]
+  implicit val moduleFormat = Json.format[Jar]
   implicit val dependencyFormat = Json.format[Dependency]
-  implicit val snapshotFormat = Json.format[DependencySnapshot]
+  implicit val snapshotFormat = Json.format[Snapshot]
 
   object autoImport {
     /**
@@ -30,21 +30,21 @@ object JarDetectivePlugin extends AutoPlugin {
       val currentModuleOrganization = organization.value
       val currentModuleVersion = version.value
 
-      val module = Module(currentModuleOrganization, currentModuleName, currentModuleVersion)
+      val jar = Jar(currentModuleOrganization, currentModuleName, currentModuleVersion)
 
       val dependencies = (allDependencies in Compile).value map { dep =>
-        Dependency(dep.organization, dep.name, dep.revision, dep.configurations.getOrElse("compile"))
+        Dependency(Jar(dep.organization, dep.name, dep.revision), dep.configurations.getOrElse("compile"))
       }
 
-      val snap = DependencySnapshot(module, dependencies.distinct.sortBy(d => s"${d.organization}:${d.name}:${d.revision}"))
+      val snap = Snapshot(jar, dependencies.distinct.sortBy(d => s"${d.jar.organization}:${d.jar.name}:${d.jar.revision}"))
 
       printDependencies(snap)
     }
   )
 
-  def printDependencies(snapshot: DependencySnapshot): Unit = {
+  def printDependencies(snapshot: Snapshot): Unit = {
     println()
-    println(s"=> ${snapshot.module}")
+    println(s"=> ${snapshot.jar}")
 
     val ser = Json.toJson(snapshot)
 
