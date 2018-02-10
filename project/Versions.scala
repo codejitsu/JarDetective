@@ -13,5 +13,6 @@ object Versions {
 
   val akkaHttpJsonVersion = "10.0.11"
 
-  val neo44jVersion       = "3.3.1"
+  val neo4jVersion       = "3.3.1"
+  val neo4jDriverVersion = "1.5.1"
 }

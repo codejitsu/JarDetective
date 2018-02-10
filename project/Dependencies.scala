@@ -29,12 +29,13 @@ object Dependencies {
 
   val akkaSprayJson = "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpJsonVersion
 
-  val neo4j = "org.neo4j" % "neo4j" % neo44jVersion
+  val neo4j = "org.neo4j" % "neo4j" % neo4jVersion
+  val neo4jDriver = "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
 
   // ====================
 
   val jarDetectiveSbtDependencies = compile(playJson)
   val jarDetectiveServiceDependencies = compile(akkaHttp, akkaCirce, circeCore, circeGeneric, circeParser, akkaSprayJson) ++
     test(akkaTestKit, scalatest, akkaSprayJson)
-  val jarDetectiveGraphDependencies = compile(neo4j) ++ test(scalatest)
+  val jarDetectiveGraphDependencies = compile(neo4j, neo4jDriver) ++ test(scalatest)
 }
