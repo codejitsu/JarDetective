@@ -15,4 +15,6 @@ object Versions {
 
   val neo4jVersion       = "3.3.1"
   val neo4jDriverVersion = "1.5.1"
+
+  val typesafeConfigVer  = "1.3.1"
 }
