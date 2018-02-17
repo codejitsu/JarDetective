@@ -34,10 +34,13 @@ object Dependencies {
 
   val typesafeConfig = "com.typesafe" % "config" % typesafeConfigVer
 
+  val logback = "ch.qos.logback" % "logback-classic" % logbackVersion
+  val scalaLogging = "com.typesafe.scala-logging" %% "scala-logging" % scalaLoggingVersion
+
   // ====================
 
   val jarDetectiveSbtDependencies = compile(playJson)
-  val jarDetectiveServiceDependencies = compile(akkaHttp, akkaCirce, circeCore, circeGeneric, circeParser, akkaSprayJson) ++
+  val jarDetectiveServiceDependencies = compile(akkaHttp, akkaCirce, circeCore, circeGeneric, circeParser, akkaSprayJson, logback, scalaLogging) ++
     test(akkaTestKit, scalatest, akkaSprayJson)
-  val jarDetectiveGraphDependencies = compile(neo4j, neo4jDriver, typesafeConfig) ++ test(scalatest)
+  val jarDetectiveGraphDependencies = compile(neo4j, neo4jDriver, typesafeConfig, logback, scalaLogging) ++ test(scalatest)
 }

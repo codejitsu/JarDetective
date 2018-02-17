@@ -13,8 +13,11 @@ object Versions {
 
   val akkaHttpJsonVersion = "10.0.11"
 
-  val neo4jVersion       = "3.3.1"
-  val neo4jDriverVersion = "1.5.1"
+  val neo4jVersion        = "3.3.1"
+  val neo4jDriverVersion  = "1.5.1"
 
-  val typesafeConfigVer  = "1.3.1"
+  val typesafeConfigVer   = "1.3.1"
+
+  val logbackVersion      = "1.2.3"
+  val scalaLoggingVersion = "3.7.2"
 }
